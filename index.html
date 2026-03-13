@@ -3,10 +3,166 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TeamCreate</title>
+  <title>Calculator</title>
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #0f172a;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color: #e2e8f0;
+    }
+    .calc {
+      width: min(92vw, 360px);
+      background: #111827;
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 12px 30px rgba(0,0,0,.35);
+    }
+    .screen {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid #334155;
+      background: #020617;
+      color: #f8fafc;
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 1.6rem;
+      text-align: right;
+      margin-bottom: 12px;
+    }
+    .keys {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 1rem;
+      cursor: pointer;
+      background: #1e293b;
+      color: #e2e8f0;
+    }
+    button:hover { filter: brightness(1.12); }
+    .op { background: #2563eb; }
+    .eq { background: #16a34a; grid-column: span 2; }
+    .wide { grid-column: span 2; }
+    .danger { background: #b91c1c; }
+  </style>
 </head>
 <body>
-  <h1>TeamCreate</h1>
-  <p>Web pública inicial de TeamCreate.</p>
+  <main class="calc">
+    <input id="screen" class="screen" value="0" readonly />
+    <section class="keys">
+      <button class="danger" data-action="clear">C</button>
+      <button data-action="sign">±</button>
+      <button data-action="percent">%</button>
+      <button class="op" data-op="/">÷</button>
+
+      <button data-num="7">7</button>
+      <button data-num="8">8</button>
+      <button data-num="9">9</button>
+      <button class="op" data-op="*">×</button>
+
+      <button data-num="4">4</button>
+      <button data-num="5">5</button>
+      <button data-num="6">6</button>
+      <button class="op" data-op="-">−</button>
+
+      <button data-num="1">1</button>
+      <button data-num="2">2</button>
+      <button data-num="3">3</button>
+      <button class="op" data-op="+">+</button>
+
+      <button class="wide" data-num="0">0</button>
+      <button data-num=".">.</button>
+      <button class="eq" data-action="equals">=</button>
+    </section>
+  </main>
+
+  <script>
+    const screen = document.getElementById('screen');
+    let current = '0';
+    let previous = null;
+    let op = null;
+    let resetScreen = false;
+
+    const format = (n) => {
+      if (!isFinite(n)) return 'Error';
+      return Number(n.toPrecision(12)).toString();
+    };
+
+    const calculate = (a, b, operator) => {
+      a = Number(a); b = Number(b);
+      if (operator === '+') return a + b;
+      if (operator === '-') return a - b;
+      if (operator === '*') return a * b;
+      if (operator === '/') return b === 0 ? Infinity : a / b;
+      return b;
+    };
+
+    const update = () => { screen.value = current; };
+
+    document.querySelector('.keys').addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+
+      const num = btn.dataset.num;
+      const operator = btn.dataset.op;
+      const action = btn.dataset.action;
+
+      if (num !== undefined) {
+        if (resetScreen) { current = '0'; resetScreen = false; }
+        if (num === '.' && current.includes('.')) return;
+        current = current === '0' && num !== '.' ? num : current + num;
+        update();
+        return;
+      }
+
+      if (operator) {
+        if (op && !resetScreen) {
+          current = format(calculate(previous, current, op));
+          if (current === 'Error') { previous = null; op = null; }
+          update();
+        }
+        previous = current;
+        op = operator;
+        resetScreen = true;
+        return;
+      }
+
+      if (action === 'equals') {
+        if (!op || previous === null) return;
+        current = format(calculate(previous, current, op));
+        previous = null;
+        op = null;
+        resetScreen = true;
+        update();
+        return;
+      }
+
+      if (action === 'clear') {
+        current = '0'; previous = null; op = null; resetScreen = false; update();
+        return;
+      }
+
+      if (action === 'sign') {
+        current = current.startsWith('-') ? current.slice(1) : (current === '0' ? '0' : '-' + current);
+        update();
+        return;
+      }
+
+      if (action === 'percent') {
+        current = format(Number(current) / 100);
+        update();
+      }
+    });
+  </script>
 </body>
 </html>
